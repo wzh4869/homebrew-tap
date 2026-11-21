@@ -1,10 +1,14 @@
 # Homebrew tap for AppPorts
 
+[简体中文](README_CN.md)
+
 Install [AppPorts](https://github.com/wzh4869/AppPorts) on macOS with Homebrew.
 
 ```sh
 brew install --cask wzh4869/tap/appports
 ```
+
+If you installed AppPorts manually, Homebrew will stop when it finds the existing `/Applications/AppPorts.app`. You can keep using that copy and update it within AppPorts.
 
 AppPorts supports Apple silicon and Intel Macs running macOS 12 or later. The tap downloads the project's release DMG and verifies its SHA-256 checksum. macOS may block the first launch because the app lacks Apple notarization. See the [AppPorts installation guide](https://github.com/wzh4869/AppPorts#readme) if that happens.
 
