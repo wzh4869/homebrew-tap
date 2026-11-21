@@ -1,0 +1,67 @@
+name: Verify AppPorts cask
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Casks/appports.rb
+      - .github/workflows/verify.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle:
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+    steps:
+      - name: Install using the public command
+        run: |
+          set -euo pipefail
+          test ! -e /Applications/AppPorts.app
+          brew install --cask wzh4869/tap/appports
+          tap="$(brew --repository wzh4869/tap)"
+          test "$(git -C "$tap" rev-parse HEAD)" = "$GITHUB_SHA"
+          expected=$(brew info --json=v2 --cask wzh4869/tap/appports | jq -er '.casks[0].version')
+          installed=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' /Applications/AppPorts.app/Contents/Info.plist)
+          test "$installed" = "$expected"
+          echo "CURRENT_VERSION=$expected" >> "$GITHUB_ENV"
+          echo "Installed $installed"
+
+      - name: Upgrade the previous cask to the published version
+        run: |
+          set -euo pipefail
+          brew uninstall --cask wzh4869/tap/appports
+          tap="$(brew --repository wzh4869/tap)"
+          cd "$tap"
+          if [[ "$(git rev-parse --is-shallow-repository)" == true ]]; then
+            git fetch --unshallow origin
+          fi
+          previous=$(git log -G '^  version "' --format=%H -- Casks/appports.rb | sed -n '2p')
+          test -n "$previous"
+          git restore --source="$previous" -- Casks/appports.rb
+          expected=$(brew info --json=v2 --cask wzh4869/tap/appports | jq -er '.casks[0].version')
+          test "$expected" != "$CURRENT_VERSION"
+          brew install --cask wzh4869/tap/appports
+          info=/Applications/AppPorts.app/Contents/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info")" = "$expected"
+          git restore --source=HEAD -- Casks/appports.rb
+          brew upgrade --cask wzh4869/tap/appports
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info")" = "$CURRENT_VERSION"
+          echo "Upgraded $expected to $CURRENT_VERSION"
+
+      - name: Uninstall and verify the migration record is preserved
+        run: |
+          set -euo pipefail
+          record="$HOME/Library/Application Support/AppPorts/container-mounts.plist"
+          test ! -e "$record"
+          mkdir -p "$(dirname "$record")"
+          plutil -create xml1 "$record"
+          cp "$record" "$RUNNER_TEMP/expected-record.plist"
+          brew uninstall --cask wzh4869/tap/appports
+          test ! -e /Applications/AppPorts.app
+          cmp "$record" "$RUNNER_TEMP/expected-record.plist"
