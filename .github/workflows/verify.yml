@@ -44,9 +44,9 @@ jobs:
           previous=$(git log -G '^  version "' --format=%H -- Casks/appports.rb | sed -n '2p')
           test -n "$previous"
           git restore --source="$previous" -- Casks/appports.rb
+          brew install --cask wzh4869/tap/appports
           expected=$(brew info --json=v2 --cask wzh4869/tap/appports | jq -er '.casks[0].version')
           test "$expected" != "$CURRENT_VERSION"
-          brew install --cask wzh4869/tap/appports
           info=/Applications/AppPorts.app/Contents/Info.plist
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info")" = "$expected"
           git restore --source=HEAD -- Casks/appports.rb
