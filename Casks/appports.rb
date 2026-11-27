@@ -1,6 +1,6 @@
 cask "appports" do
-  version "2.3.1"
-  sha256 "e6b1c5c2ba8c3e24b95dd849735a0e3a4c57a0b144dab946b9e0146c2856609e"
+  version "2.4.0"
+  sha256 "93ebce0287a56c23d47c21fc9a289475d1a29d701f87c6a03103cf24f592ce4b"
 
   url "https://github.com/wzh4869/AppPorts/releases/download/#{version}/AppPorts#{version}.dmg"
   name "AppPorts"
